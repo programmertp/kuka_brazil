@@ -1,0 +1,22 @@
+<launch>
+	<!--this param is needed for using simulator's time-->
+	<param name="/use_sim_time" value="true" />
+
+	<!-- First, we need robot's driver -->
+	<!--<include file="$(find youbot_driver_ros_interface)/launch/youbot_driver.launch" />-->
+
+	<node name="stage" pkg="stage_ros" type="stageros" args="$(find kuka_brazil)/map/debug.world" />
+
+	<!-- Third, amcl -->
+	<include file="$(find kuka_brazil)/launch/2dslam.launch" />
+
+	<!-- Fourth, move_base -->
+	<include file="$(find kuka_brazil)/launch/move_base_local.launch" />
+
+	<!-- Automatically launch rviz to watch the whole process -->
+	<node name="rviz" pkg="rviz" type="rviz" args="-d $(find kuka_brazil)/rviz/first_stage.rviz" />
+
+	<!-- Sixth, node that moves robot to table on a specified distance -->
+	<node name="automapping" pkg="kuka_brazil" type="automapping" output="screen"/>
+
+</launch>

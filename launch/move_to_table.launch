@@ -1,0 +1,26 @@
+<!-- This is a launch file that includes all necessary pkgs for robot to move its base to a "table". It inlcudes custom nodes made by employees of "Robotic Engineering Department" of ITMO University. -->
+<launch>
+
+	<!-- Second, map_server -->
+	<node name="map_server" pkg="map_server" type="map_server" args="$(find kuka_brazil)/map/red_brazil_after_paint.yaml" />
+
+	<include file="$(find kuka_brazil)/launch/amcl.launch" />
+
+	<!--<include file="$(find kuka_brazil)/launch/move_base_global.launch">
+		<remap from="cmd_vel" to="move_base/cmd_vel"/>
+	</include>-->
+
+	<!-- Fifth, node that detects a table on a loaded map -->
+	<include file="$(find kuka_brazil)/launch/table_detector.launch" />
+
+	<!-- Automatically launch rviz to watch the whole process -->
+	<node name="rviz" pkg="rviz" type="rviz" args="-d $(find kuka_brazil)/rviz/second_stage.rviz" />
+
+	<!-- Sixth, reset robot's localization so it wouldn't send any of his states -->
+	<node pkg="rosservice" name="reset_localization" type="rosservice" args="call global_localization"/>
+
+	<!-- Sixth, node that moves robot to table on a specified distance -->
+	<node name="move_to_table" pkg="kuka_brazil" type="move_to_table" output="screen">
+	<!--<rosparam file="$(find kuka_brazil)/config/init_params.yaml" command="load" />-->
+	</node>
+</launch>

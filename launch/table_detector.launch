@@ -1,0 +1,10 @@
+<launch>
+	<node name="table_detector_node" pkg="kuka_brazil" type="table_detector" output="screen">
+		<param name="distance_to_table" value="-0.80"/>
+		<param name="angle_with_table" value="1.57"/>
+		<param name="table_width" value="0.30"/>
+ 		<param name="table_length" value="0.39"/>
+		<param name="max_size_error" value="0.05"/>
+	</node>
+</launch>
+<!--sizes of robotino's box 0.30 0.39 -->
