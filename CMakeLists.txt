@@ -9,12 +9,9 @@ include_directories(${OpenCV_INCLUDE_DIRS})
 catkin_package()
 
 include_directories(
-	include  
-	${catkin_INCLUDE_DIRS}	
+    include  
+    ${catkin_INCLUDE_DIRS}
 )
-
-add_executable(stopper src/stopper.cpp)
-target_link_libraries(stopper ${catkin_LIBRARIES})
 
 add_executable(table_detector src/table_detector.cpp)
 target_link_libraries(table_detector ${catkin_LIBRARIES} ${OpenCV_LIBRARIES})
