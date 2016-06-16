@@ -6,10 +6,10 @@
 #include <tf/transform_listener.h>
 #include <cstdlib>
 
-#define PI 3.14159265359
+
 #define LOGNAME "automapping_node"
 #define NEEDED_DIST 0.5
-#define ANGLE 140
+#define ANGLE 120.0*M_PI/180.0
 
 #define WAITING_GOAL 0
 #define ROBOT_MOVING 1
@@ -102,12 +102,12 @@ void AutomappingNode::mapHandler(const nav_msgs::GetMap::Response &map){
 void AutomappingNode::doYourWork(){
 	
 	std::cout << LOGNAME << ": Start initial rotations." << std::endl;
-	robot.rotateInPlace(ANGLE*PI/180,     "odom");	
-	robot.rotateInPlace(2 * ANGLE*PI/180, "odom");
-	robot.rotateInPlace(3 * ANGLE*PI/180, "odom");
-	robot.rotateInPlace(2 * ANGLE*PI/180, "odom");
-	robot.rotateInPlace(1 * ANGLE*PI/180, "odom");
-	robot.rotateInPlace(0.0,	      "odom");
+	robot.rotateInPlace(ANGLE);
+	robot.rotateInPlace(ANGLE);
+	robot.rotateInPlace(ANGLE);
+	robot.rotateInPlace(-ANGLE);
+	robot.rotateInPlace(-ANGLE);
+	robot.rotateInPlace(-ANGLE);
 	std::cout << LOGNAME << ": Initial rotations have been done." << std::endl;	
 
 	nav_msgs::GetMap map_srv;
@@ -118,7 +118,7 @@ void AutomappingNode::doYourWork(){
 	while(ros::ok()){
 		if (map_client.call(map_srv)){
 			mapHandler(map_srv.response);
-			robot.moveTo(curr_goal.target_pose, NEEDED_DIST);
+			robot.moveTo(curr_goal.target_pose);
 		} 
 		else{
 			ROS_ERROR_STREAM(LOGNAME << ": Failed to call service dynamic_map!!!");
