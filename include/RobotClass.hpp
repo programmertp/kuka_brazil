@@ -18,12 +18,6 @@ class RobotClass{
     ros::NodeHandle nh;
     ros::Publisher vel_publisher;
     actionlib::SimpleActionClient<move_base_msgs::MoveBaseAction> mb_client;
-    geometry_msgs::PoseStamped cur_action_pose;
-
-    void requestDone(const actionlib::SimpleClientGoalState& state, const move_base_msgs::MoveBaseResultConstPtr& result);
-    void requestBecameActive();
-    void requestFeedback(const move_base_msgs::MoveBaseFeedbackConstPtr& feedback);
-    void requestFeedbackWithDist(const move_base_msgs::MoveBaseFeedbackConstPtr& feedback);
 
 public:
 
@@ -32,7 +26,7 @@ public:
 
     void stop();
 
-    void moveTo(geometry_msgs::PoseStamped);
+    std::string moveTo(geometry_msgs::PoseStamped);
 
     void rotateInPlace(double angle);
 };

@@ -16,16 +16,14 @@ RobotClass::~RobotClass(){
 
 
 
-void RobotClass::moveTo(geometry_msgs::PoseStamped goal){
+std::string RobotClass::moveTo(geometry_msgs::PoseStamped goal){
     std::cout << LOG_NAME << ": Sending goal for moveTo..." << std::endl;
     move_base_msgs::MoveBaseGoal mb_goal;
     mb_goal.target_pose = goal;
-    mb_client.sendGoal(mb_goal, boost::bind(&RobotClass::requestDone, this, _1, _2),
-                      boost::bind(&RobotClass::requestBecameActive, this),
-                      boost::bind(&RobotClass::requestFeedback, this, _1));
-    std::cout << LOG_NAME << ": Goal for moveTo was sent" << std::endl;
-
-    mb_client.waitForResult();
+    std::string state = mb_client.sendGoalAndWait(mb_goal).toString();
+    stop();
+    std::cout << LOG_NAME << ": moveTo finished its work" << std::endl;
+    return state;
 }
 
 
@@ -36,34 +34,16 @@ void RobotClass::rotateInPlace(double angle){
     mb_goal.target_pose.header.stamp = ros::Time::now();
     mb_goal.target_pose.header.frame_id = "base_link";
     mb_goal.target_pose.pose.orientation = tf::createQuaternionMsgFromYaw(angle);
-
-    mb_client.sendGoal(mb_goal, boost::bind(&RobotClass::requestDone, this, _1, _2),
-                       boost::bind(&RobotClass::requestBecameActive, this),
-                       boost::bind(&RobotClass::requestFeedback, this, _1));
-    std::cout << LOG_NAME << ": Goal for rotateInPlace was sent" << std::endl;
-
-    mb_client.waitForResult();
+    mb_client.sendGoalAndWait(mb_goal);
+    stop();
+    std::cout << LOG_NAME << ": rotateInPlace finished its work" << std::endl;
 }
 
 
 
-void RobotClass::requestBecameActive(){
-    std::cout << LOG_NAME << ": MoveBase server start processing of the goal" << std::endl;
-}
-
-
-
-void RobotClass::requestFeedback(const move_base_msgs::MoveBaseFeedbackConstPtr& feedback){
-    cur_action_pose = feedback->base_position;
-}
-
-
-
-void RobotClass::requestDone(const actionlib::SimpleClientGoalState& state,
-                             const move_base_msgs::MoveBaseResultConstPtr& result){
-    std::cout << LOG_NAME << ": MoveBase server finished processing of the goal in state " << state.toString() << std::endl;
-
+void RobotClass::stop(){
     geometry_msgs::Twist null_velocity;
+    //this 3 from for{} is not used anywhere else
     for(int i = 0; i < 3; i++)
             vel_publisher.publish(null_velocity);
 }
