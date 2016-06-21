@@ -9,7 +9,7 @@ include_directories(${OpenCV_INCLUDE_DIRS})
 catkin_package()
 
 include_directories(
-    include  
+    include
     ${catkin_INCLUDE_DIRS}
 )
 
@@ -19,6 +19,6 @@ target_link_libraries(table_detector ${catkin_LIBRARIES} ${OpenCV_LIBRARIES})
 add_executable(move_to_table src/move_to_table.cpp src/RobotClass.cpp)
 target_link_libraries(move_to_table ${catkin_LIBRARIES})
 
-add_executable(automapping src/automapping.cpp src/auto_map_v2.cpp src/RobotClass.cpp)
+add_executable(automapping src/automapping.cpp src/AutomappingNode.cpp src/RobotClass.cpp)
 target_link_libraries(automapping ${catkin_LIBRARIES})
 
