@@ -17,6 +17,11 @@
 	<node name="rviz" pkg="rviz" type="rviz" args="-d $(find kuka_brazil)/rviz/first_stage.rviz" />
 
 	<!-- Sixth, node that moves robot to table on a specified distance -->
-	<node name="automapping" pkg="kuka_brazil" type="automapping" output="screen"/>
+	<node name="automapping" pkg="kuka_brazil" type="automapping" output="screen">
+                <param name="safe_distance" value="0.5"/>
+                <param name="tolerance" value="0.1"/>
+                <param name="map_name" value="$(find kuka_brazil)/map/auto_result"/>
+                <param name="pose_params_file_name" value="$(find kuka_brazil)/config/init_pose.yaml"/>
+        </node>
 
 </launch>
