@@ -6,12 +6,11 @@
 #include <move_base_msgs/MoveBaseAction.h>
 #include <geometry_msgs/PoseStamped.h>
 #include <geometry_msgs/Twist.h>
-#include <tf/transform_datatypes.h>
+#include <tf/transform_listener.h>
 #include <string>
 #include <iostream>
 #include <cmath>
 
-#define LOG_NAME "RobotClass object"
 
 class RobotClass{
 
@@ -29,6 +28,8 @@ public:
     std::string moveTo(geometry_msgs::PoseStamped);
 
     void rotateInPlace(double angle);
+
+    geometry_msgs::PoseStamped currentPose(std::string in_frame);
 };
 
 #endif //_ROBOTCLASS_
