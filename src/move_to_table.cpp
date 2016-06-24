@@ -15,7 +15,7 @@
 #define NO_MORE_EXTRA_MOVE_AVAILABLE_OR_NEED 6
 
 #define LOGNAME "move_to_table_node"
-#define ANGLE 90
+#define ANGLE 120*M_PI/180
 #define XTION_MIN_DISTANCE 0.55
 #define XTION_MAX_DISTANCE 1.00
 #define XTION_CORRECTION_STEP 0.15
@@ -164,12 +164,13 @@ void MoveToTable_Node::doYourWork(){
 	pose_reader.shutdown();
 
 	std::cout << LOGNAME << ": Correct initial pose with rotations." << std::endl;
-	robot.rotateInPlace( ANGLE*M_PI/180, "odom");
-	robot.rotateInPlace( ANGLE*M_PI/180, "odom");
-	robot.rotateInPlace(-ANGLE*M_PI/180, "odom");
-	robot.rotateInPlace(-ANGLE*M_PI/180, "odom");		
-	/*robot.rotateInPlace(1 * ANGLE*M_PI/180, "odom");
-	robot.rotateInPlace(0.0, 		"odom");*/
+	robot.rotateInPlace(ANGLE);
+	robot.rotateInPlace(ANGLE);
+	robot.rotateInPlace(ANGLE);
+	robot.rotateInPlace(-ANGLE);
+	robot.rotateInPlace(-ANGLE);
+        robot.rotateInPlace(-ANGLE);
+
 	std::cout << LOGNAME << ": All rotations have been done." << std::endl;
 
 	goal_reader = nh.subscribe("detector_pose", 1, &MoveToTable_Node::goalReaderCallback, this);
@@ -183,31 +184,6 @@ void MoveToTable_Node::doYourWork(){
 	goal_reader.shutdown();
 
 	robot.moveTo(cur_goal);
-
-	status = WAIT_FOR_EXTRA_MOVE;
-	glass_service = nh.advertiseService("extra_move", &MoveToTable_Node::extraMoveServerCallback, this);
-
-	while( (status != NO_MORE_EXTRA_MOVE_AVAILABLE_OR_NEED) && ros::ok()){
-		ros::spinOnce();
-		if(status == EXTRA_MOVE_RECEIVED){
-			robot.moveForward(correction_distance);
-			status = WAIT_FOR_EXTRA_MOVE;
-		}
-		sleeper_big.sleep();
-	}	
-
-	glass_service.shutdown();
-	
-	
-	robot.moveForward(XTION_CORRECTION_STEP*(extra_movement_num-1));
-	
-	cord_publisher = nh.advertise<std_msgs::Int8>("deltax", 1);
-	geometry_msgs::Pose msg_pose;
-	for(int i = 0; (i < 20) && ros::ok(); i++){	
-		msg_pose.position.x = XTION_CORRECTION_STEP*(extra_movement_num-1);
-		cord_publisher.publish(msg_pose);
-		sleeper_small.sleep();	
-	}
 
 	ros::shutdown();
 }
