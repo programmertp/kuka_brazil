@@ -1,6 +1,12 @@
-#include "ros/ros.h"
-#include "kuka_brazil_msgs/GetGoal.h"
-
+#include <kuka_brazil_msgs/GetGoal.h>
+#include <ros/ros.h>
+#include <move_base_msgs/MoveBaseAction.h>
+//#include <actionlib/client/simple_action_client.h>
+#include <geometry_msgs/Twist.h>
+#include <geometry_msgs/Pose.h>
+#include <nav_msgs/OccupancyGrid.h>
+#include <tf/LinearMath/Vector3.h>
+#include <nav_msgs/GetMap.h>
 int ji_from_xy(double xy, nav_msgs::MapMetaData meta)
 {
     return xy / meta.resolution;
@@ -16,7 +22,7 @@ double y_from_i(int i, nav_msgs::MapMetaData meta)
 	return meta.resolution * i + meta.origin.position.y;
 }
 
-bool processRegion(const nav_msgs::OccupancyGrid::ConstPtr& gr,
+bool processRegion(const nav_msgs::OccupancyGrid &gr,
 									int i, int j)
 {
 	// FUNCTION THAT PROCESSES 21x21 REGION AND RETURNS TRUE IF IT'S A FRONTIER 
@@ -35,7 +41,7 @@ bool processRegion(const nav_msgs::OccupancyGrid::ConstPtr& gr,
 	{
 		for(w = j-10; w <= j+10; w++)
 		{
-			switch(gr->data[w + (gr->info.width)*h])
+			switch(gr.data[w + (gr.info.width)*h])
 			{
 				case 100:
 					occupied++;
@@ -54,7 +60,7 @@ bool processRegion(const nav_msgs::OccupancyGrid::ConstPtr& gr,
 	}
 
 	if ((unknown >= 200) && (free >= 150)) return true;
-	ROS_WARN("FOR SOME REASON, I THINK THIS REGION IS NOW A FRONTIER")
+	ROS_WARN("FOR SOME REASON, I THINK THIS REGION IS NOW A FRONTIER");
 	return false;
 }
 
@@ -64,20 +70,21 @@ class Explorer
 	ros::ServiceServer service;
 	ros::ServiceClient client;
 	
-	void callback(kuka_brazil_msgs::GetGoal::Request &req,
+	bool callback(kuka_brazil_msgs::GetGoal::Request &req,
               kuka_brazil_msgs::GetGoal::Response &res);
 public:
 	Explorer();
 	~Explorer();
 	void start_work();
     nav_msgs::OccupancyGrid map;
-    bool searching = false;
+    bool searching;
 };
 
 Explorer::Explorer()
 {
+	searching = false;
 	ros::ServiceClient client = n.serviceClient<nav_msgs::GetMap>("dynamic_map");
-	ros::ServiceServer service = n.advertiseService("get_goal_at_map", Explorer::callback, this);
+	ros::ServiceServer service = n.advertiseService("get_goal_at_map", &Explorer::callback, this);
 }
 
 Explorer::~Explorer()
@@ -88,33 +95,26 @@ Explorer::~Explorer()
 
 void Explorer::start_work()
 {
-        do {
-            if(!searching)
-            {
-                nav_msgs::GetMap srv;
-                if (client.call(srv))
-                {
-                    map = srv.response.map;
-                    searching = true;
-                }
-                else
-                {
-                    ROS_ERROR("Failed to call server dynamic_map");
-                    ros::shutdown();
-                }
-            }
-            else
-            {
-                ros::spinOnce(); 
-            }
-        }
-        while(ros::ok());
+		client.waitForExistence();
+                ros::spin(); 
 }
 
 // Here will remain service callback function
 bool Explorer::callback(kuka_brazil_msgs::GetGoal::Request &req,
               kuka_brazil_msgs::GetGoal::Response &res)
 {
+    nav_msgs::GetMap srv;
+    if (client.call(srv))
+    {
+        map = srv.response.map;
+        searching = true;
+    }
+    else
+    {
+        ROS_ERROR("Failed to call server dynamic_map");
+        ros::shutdown();
+    }
+
     // distance between map origin and /base_link in /map frame
     double x_dist = req.robot_pose.x - map.info.origin.position.x;
     double y_dist = req.robot_pose.y - map.info.origin.position.y;
@@ -139,7 +139,7 @@ bool Explorer::callback(kuka_brazil_msgs::GetGoal::Request &req,
 		{
 			// j coordinate remains the same
 			exp_i = exp_i - 1;
-			if(processRegion(&map, exp_i, exp_j))
+			if(processRegion(map, exp_i, exp_j))
 			{
 				double x = x_from_j(exp_j, map.info);
 				double y = y_from_i(exp_i, map.info);
@@ -148,8 +148,8 @@ bool Explorer::callback(kuka_brazil_msgs::GetGoal::Request &req,
 					if ((x == req.excluded_goals[z].x) &&
 						(y == req.excluded_goals[z].y)) break;
 				}
-				res.x = x;
-				res.y = y;
+				res.goal.x = x;
+				res.goal.y = y;
 				return true;
 			}
 		}
@@ -158,7 +158,7 @@ bool Explorer::callback(kuka_brazil_msgs::GetGoal::Request &req,
 		for(k = 1, m++; k <= m; k++)
 		{
 			exp_j = exp_j + 1;
-			if(processRegion(&map, exp_i, exp_j))
+			if(processRegion(map, exp_i, exp_j))
 			{
 				double x = x_from_j(exp_j, map.info);
 				double y = y_from_i(exp_i, map.info);
@@ -167,8 +167,8 @@ bool Explorer::callback(kuka_brazil_msgs::GetGoal::Request &req,
 					if ((x == req.excluded_goals[z].x) &&
 						(y == req.excluded_goals[z].y)) break;
 				}
-				res.x = x;
-				res.y = y;
+				res.goal.x = x;
+				res.goal.y = y;
 				return true;
 			}
 		}
@@ -177,7 +177,7 @@ bool Explorer::callback(kuka_brazil_msgs::GetGoal::Request &req,
 		for(k = 1, n++; k <= n; k++)
 		{
 			exp_i = exp_i + 1;
-			if(processRegion(&map, exp_i, exp_j))
+			if(processRegion(map, exp_i, exp_j))
 			{
 				double x = x_from_j(exp_j, map.info);
 				double y = y_from_i(exp_i, map.info);
@@ -186,8 +186,8 @@ bool Explorer::callback(kuka_brazil_msgs::GetGoal::Request &req,
 					if ((x == req.excluded_goals[z].x) &&
 						(y == req.excluded_goals[z].y)) break;
 				}
-				res.x = x;
-				res.y = y;
+				res.goal.x = x;
+				res.goal.y = y;
 				return true;
 			}
 		}
@@ -196,7 +196,7 @@ bool Explorer::callback(kuka_brazil_msgs::GetGoal::Request &req,
 		for(k = 1, m++; k <= m; k++)
 		{
 			exp_j = exp_j - 1;
-			if(processRegion(&map, exp_i, exp_j))
+			if(processRegion(map, exp_i, exp_j))
 			{
 				double x = x_from_j(exp_j, map.info);
 				double y = y_from_i(exp_i, map.info);
@@ -205,8 +205,8 @@ bool Explorer::callback(kuka_brazil_msgs::GetGoal::Request &req,
 					if ((x == req.excluded_goals[z].x) &&
 						(y == req.excluded_goals[z].y)) break;
 				}
-				res.x = x;
-				res.y = y;
+				res.goal.x = x;
+				res.goal.y = y;
 				return true;
 			}
 		}
