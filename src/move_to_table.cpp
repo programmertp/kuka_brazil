@@ -1,199 +1,127 @@
 #include <ros/ros.h>
-#include <geometry_msgs/Pose.h>
-#include <geometry_msgs/PoseStamped.h>
-#include <geometry_msgs/PoseWithCovarianceStamped.h>
 #include <RobotClass.hpp>
-#include <kuka_brazil_msgs/ExtraMove.h>
-#include <std_msgs/Int8.h>
+#include <nav_msgs/GetMap.h>
+#include <tf/transform_datatypes.h>
+#include <geometry_msgs/PoseStamped.h>
+#include <opencv2/imgproc/imgproc.hpp>
+#include <opencv2/highgui/highgui.hpp>
+#include <cmath>
 
-#define WAITING_FOR_POSE 0
-#define POSE_RECEIVED 1
-#define WAITING_FOR_GOAL 2
-#define GOAL_RECEIVED 3
-#define WAIT_FOR_EXTRA_MOVE 4
-#define EXTRA_MOVE_RECEIVED 5
-#define NO_MORE_EXTRA_MOVE_AVAILABLE_OR_NEED 6
+#define ISNULL(A) A.x == 0.0 && A.y == 0.0 && A.z == 0.0 && A.w == 0.0
+#define IS_SUIT_SIZE(A,B) ( (std::abs(minRect.size.width*map.info.resolution  - A) < max_size_error) && \
+                            (std::abs(minRect.size.height*map.info.resolution - B) < max_size_error) )
 
-#define LOGNAME "move_to_table_node"
-#define ANGLE 120*M_PI/180
-#define XTION_MIN_DISTANCE 0.55
-#define XTION_MAX_DISTANCE 1.00
-#define XTION_CORRECTION_STEP 0.15
+class MoveToTableNode{
+    ros::NodeHandle nh, nh_for_param;
+    RobotClass robot;
+    ros::ServiceClient map_reader;
 
-class MoveToTable_Node{
-	ros::NodeHandle nh, nh_for_param;
-	ros::Subscriber goal_reader;
-	ros::Subscriber pose_reader;
-	ros::Publisher goose_publisher;
-	ros::Publisher cord_publisher;
-	ros::ServiceServer glass_service;
-	//ros::Publisher init_amcl_publer;
-	int status;
-	double init_x, init_y, init_angle;
-	float correction_distance;
-	RobotClass robot;
-	geometry_msgs::PoseStamped cur_goal;
-	int extra_movement_num;	
+    double table_width, table_length, max_size_error;
+    double distance_to_table, angle_with_table;
 
-	void goalReaderCallback(const geometry_msgs::PoseStamped &geomGoal);
-	void poseReaderCallback(const geometry_msgs::PoseWithCovarianceStamped &msg);
-	bool extraMoveServerCallback(kuka_brazil_msgs::ExtraMove::Request &req, kuka_brazil_msgs::ExtraMove::Response &res);
+    geometry_msgs::PoseStamped findTable(nav_msgs::OccupancyGrid &map);
+
 public:
-	
-	MoveToTable_Node();
-	~MoveToTable_Node();
-	void doYourWork();
-	
+
+    MoveToTableNode();
+    ~MoveToTableNode();
+    void doYourWork();
+
 };
 
 
-MoveToTable_Node::MoveToTable_Node() : nh_for_param("~"){
 
-	extra_movement_num = 0;
-	status = WAITING_FOR_POSE;
-	nh_for_param.param<double>("red_init_x", init_x, 0.0);
-	nh_for_param.param<double>("red_init_y", init_y, 0.0);
-	nh_for_param.param<double>("red_init_angle", init_angle, 0.0);
-	
-	pose_reader = nh.subscribe("initialpose", 1, &MoveToTable_Node::poseReaderCallback, this);
-	goose_publisher = nh.advertise<std_msgs::Int8>("goose", 1);
+MoveToTableNode::MoveToTableNode() : nh_for_param("~"){
+    ROS_INFO_STREAM("Initialization...");
+    nh_for_param.param<double>("distance_to_table", distance_to_table, 0.5);
+    nh_for_param.param<double>("angle_with_table", angle_with_table, 0.0);
+    nh_for_param.param<double>("table_width", table_width, 0.5);
+    nh_for_param.param<double>("table_length", table_length, 0.5);
+    nh_for_param.param<double>("max_size_error", max_size_error, 0.05);
 
-	//init_amcl_publer = nh.advertise<geometry_msgs::PoseWithCovarianceStamped>("initialpose", 10);
-
-	std::cout << LOGNAME << ": Initialization: success." << std::endl;	
-}
-
-
-MoveToTable_Node::~MoveToTable_Node(){
-	goal_reader.shutdown();
-	pose_reader.shutdown();
-	//init_amcl_publer.shutdown();
-}
-
-
-void MoveToTable_Node::goalReaderCallback(const geometry_msgs::PoseStamped &goal){
-	status = GOAL_RECEIVED;
-	std::cout << LOGNAME <<": Goal near table received." << std::endl;
-	cur_goal = goal; 	
+    map_reader = nh.serviceClient<nav_msgs::GetMap>("static_map");
+    ROS_INFO_STREAM("Initialization done");
 }
 
 
 
-void MoveToTable_Node::poseReaderCallback(const geometry_msgs::PoseWithCovarianceStamped &msg){
-	status = POSE_RECEIVED;
-	std::cout << LOGNAME <<": Robot's pose received." << std::endl; 	
+MoveToTableNode::~MoveToTableNode(){
+    map_reader.shutdown();
 }
 
 
 
-bool MoveToTable_Node::extraMoveServerCallback(kuka_brazil_msgs::ExtraMove::Request &req, kuka_brazil_msgs::ExtraMove::Response &res){
-	
-	std::cout << LOGNAME <<": Start running extra movement" << std::endl;	
-	static int server_status = 3;	
-	
-	if(server_status == 3){
-		extra_movement_num++;
-		if ((extra_movement_num <= std::ceil( (XTION_MAX_DISTANCE - XTION_MIN_DISTANCE) / XTION_CORRECTION_STEP)) && (req.state == 0)){	
-		
-			if(extra_movement_num == 1){
-				double dist_to_table;
-				nh.getParam("table_detector_node/distance_to_table", dist_to_table);
-				ROS_INFO_STREAM(dist_to_table);
-				correction_distance = std::abs(dist_to_table) - XTION_MIN_DISTANCE;	
-				ROS_INFO_STREAM(std::abs(dist_to_table) - XTION_MIN_DISTANCE);
-			}
-			else
-				correction_distance = -XTION_CORRECTION_STEP;
-		
-			status = EXTRA_MOVE_RECEIVED;
-			res.answer = 1;	
-			server_status = 2;
-		}
-		else{
-			res.answer = 0;
-			status = NO_MORE_EXTRA_MOVE_AVAILABLE_OR_NEED;	
-		}	
-	}
-	else if(server_status == 2){
-		if(status == WAIT_FOR_EXTRA_MOVE){
-			std::cout << LOGNAME <<": Extra movement was done." << std::endl;			
-			server_status = 3;
-			res.answer = 3;
-		} else		
-			res.answer = 2;
-	}
-	
-	
-	return true; 	
+geometry_msgs::PoseStamped MoveToTableNode::findTable(nav_msgs::OccupancyGrid& map){
+
+    cv::Mat mat_edges;
+    cv::Mat map_mat = cv::Mat(map.data).reshape(0, map.info.height);
+    map_mat.convertTo(mat_edges, CV_8U);
+
+    cv::Canny(mat_edges, mat_edges, 10, 30, 5);
+
+    std::vector<std::vector<cv::Point> > contours;
+    cv::findContours( mat_edges, contours, CV_RETR_LIST, CV_CHAIN_APPROX_SIMPLE);
+
+    geometry_msgs::PoseStamped goal;
+    for(int i = 0; i < contours.size(); i++){
+
+        cv::RotatedRect minRect;
+        minRect = cv::minAreaRect( cv::Mat(contours[i]) );
+
+        if(IS_SUIT_SIZE(table_length, table_width) || IS_SUIT_SIZE(table_width, table_length)){
+
+            double table_angle = minRect.angle * M_PI / 180;
+            if(minRect.size.width < minRect.size.height){
+                table_angle -= M_PI/2;
+            }
+
+            goal.pose.position.x = minRect.center.x * map.info.resolution + distance_to_table * std::sin(table_angle);
+            goal.pose.position.y = minRect.center.y * map.info.resolution - distance_to_table * std::cos(table_angle);
+            goal.pose.orientation = tf::createQuaternionMsgFromYaw(table_angle - angle_with_table);
+            goal.header.frame_id = "map";
+            break;
+        }
+
+    }
+
+    return goal;
 }
 
 
 
-void MoveToTable_Node::doYourWork(){
-	
-	ros::Rate sleeper_big(1000), sleeper_small(50);	
+void MoveToTableNode::doYourWork(){
 
-	/*for(int i = 0; i < 10; i++){
-		std_msgs::Int8 msg;	
-		msg.data = 1;
-		goose_publisher.publish(msg);
-		sleeper_small.sleep();
-	}
+    ROS_INFO_STREAM("Waiting for \"" << map_reader.getService() << "\" service appearance...");
+    map_reader.waitForExistence();
+    ROS_INFO_STREAM("\"" << map_reader.getService() << "\" service appeared");
 
-	goose_publisher.shutdown();*/
+    ROS_INFO_STREAM("Getting map...");
+    nav_msgs::GetMap map_srv;
+    map_reader.call(map_srv);
+    ROS_INFO_STREAM("Map obtained");
 
-	/*geometry_msgs::PoseWithCovarianceStamped init_msgs;
-	init_msgs.header.frame_id = "map";
-	init_msgs.pose.pose.position.x = init_x;
-	init_msgs.pose.pose.position.y = init_y;
-	init_msgs.pose.pose.orientation = tf::createQuaternionMsgFromYaw(init_angle);		
-	
-	sleeper_big.sleep();
-	
-	for(int i = 0; i < 8; i++){
-		init_amcl_publer.publish(init_msgs);		
-		sleeper_small.sleep();	
-	}
-	init_amcl_publer.shutdown();*/
+    ROS_INFO_STREAM("Finding table...");
+    geometry_msgs::PoseStamped pose_near_table = findTable(map_srv.response.map);
+    if(ISNULL(pose_near_table.pose.orientation)){
+        ROS_WARN_STREAM("No table found!");
+        return;
+    }
 
-	while((status != POSE_RECEIVED) && ros::ok()){
-		ros::spinOnce();
-		sleeper_small.sleep();	
-	}
+    ROS_INFO_STREAM("Table found. Sending robot to it...");
+    std::string status = robot.moveTo(pose_near_table);
+    if(status == "SUCCEEDED")
+        ROS_INFO_STREAM("Robot successfully achieved the goal");
+    else
+        ROS_INFO_STREAM("Robot did not achieve the goal");
 
-	pose_reader.shutdown();
-
-	std::cout << LOGNAME << ": Correct initial pose with rotations." << std::endl;
-	robot.rotateInPlace(ANGLE);
-	robot.rotateInPlace(ANGLE);
-	robot.rotateInPlace(ANGLE);
-	robot.rotateInPlace(-ANGLE);
-	robot.rotateInPlace(-ANGLE);
-        robot.rotateInPlace(-ANGLE);
-
-	std::cout << LOGNAME << ": All rotations have been done." << std::endl;
-
-	goal_reader = nh.subscribe("detector_pose", 1, &MoveToTable_Node::goalReaderCallback, this);
-
-	status = WAITING_FOR_GOAL;
-	while((status != GOAL_RECEIVED) && ros::ok()){
-		ros::spinOnce();
-		sleeper_small.sleep();	
-	}
-	
-	goal_reader.shutdown();
-
-	robot.moveTo(cur_goal);
-
-	ros::shutdown();
+    ROS_INFO_STREAM("Shutdowning...");
 }
 
 
 
 int main (int argc, char **argv){
-	ros::init(argc, argv, "move_to_table_node");
-	std::cout << LOGNAME << ": Initialization..." << std::endl;
-	MoveToTable_Node node;
-	node.doYourWork();
-	return 0;
+    ros::init(argc, argv, "move_to_table_node");
+    MoveToTableNode node;
+    node.doYourWork();
+    return 0;
 }

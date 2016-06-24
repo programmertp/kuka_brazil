@@ -1,29 +1,33 @@
 <!-- This is a launch file that includes all necessary pkgs for robot to move its base to a "table". It inlcudes custom nodes made by employees of "Robotic Engineering Department" of ITMO University. -->
 <launch>
-    <!-- First, we need robot's driver -->
-    <!--<include file="$(find youbot_driver_ros_interface)/launch/youbot_driver.launch" />-->
+        <!-- First, we need robot's driver -->
+        <!--<include file="$(find youbot_driver_ros_interface)/launch/youbot_driver.launch" />-->
+        <!--this param is needed for using simulator's time-->
+            <param name="/use_sim_time" value="true" />
+        <node name="stage" pkg="stage_ros" type="stageros" args="$(find kuka_brazil)/map/debug.world" />
 
-    <node name="stage" pkg="stage_ros" type="stageros" args="$(find kuka_brazil)/map/debug.world" />
+        <!-- Second, map_server -->
+        <node name="map_server" pkg="map_server" type="map_server" args="$(find kuka_brazil)/map/test.yaml" />
 
-    <!-- Second, map_server -->
-    <node name="map_server" pkg="map_server" type="map_server" args="$(find kuka_brazil)/map/test.yaml" />
-    
-    <!-- Third, amcl -->
-    <include file="$(find kuka_brazil)/launch/amcl.launch" />
-    
-    <!-- Fourth, move_base -->
-    <include file="$(find kuka_brazil)/launch/move_base_global.launch" />
-    
-    <!-- Fifth, node that detects a table on a loaded map -->
-    <include file="$(find kuka_brazil)/launch/table_detector.launch" />
-    
-    <!-- Automatically launch rviz to watch the whole process -->
-    <node name="rviz" pkg="rviz" type="rviz" args="-d $(find kuka_brazil)/rviz/second_stage.rviz" />
-    
-    <!-- Sixth, reset robot's localization so it wouldn't send any of his states -->
-    
-    <!-- Sixth, node that moves robot to table on a specified distance -->
-    <node name="move_to_table" pkg="kuka_brazil" type="move_to_table" output="screen"/>
+        <!-- Third, amcl -->
+        <include file="$(find kuka_brazil)/launch/amcl.launch" />
 
-    <node pkg="rosservice" name="reset_localization" type="rosservice" args="call global_localization"/>
+        <!-- Fourth, move_base -->
+        <include file="$(find kuka_brazil)/launch/move_base_global.launch" />
+
+        <!-- Automatically launch rviz to watch the whole process -->
+        <node name="rviz" pkg="rviz" type="rviz" args="-d $(find kuka_brazil)/rviz/second_stage.rviz" />
+
+        <!-- Sixth, reset robot's localization so it wouldn't send any of his states -->
+
+        <!-- Sixth, node that moves robot to table on a specified distance -->
+        <node name="move_to_table" pkg="kuka_brazil" type="move_to_table" output="screen">
+            <param name="distance_to_table" value="-0.80"/>
+            <param name="angle_with_table" value="1.57"/>
+            <param name="table_width" value="0.6"/>
+            <param name="table_length" value="0.3"/>
+            <param name="max_size_error" value="0.05"/>
+        </node>
+
+        <node pkg="rosservice" name="reset_localization" type="rosservice" args="call global_localization"/>
 </launch>

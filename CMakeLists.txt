@@ -13,11 +13,8 @@ include_directories(
     ${catkin_INCLUDE_DIRS}
 )
 
-add_executable(table_detector src/table_detector.cpp)
-target_link_libraries(table_detector ${catkin_LIBRARIES} ${OpenCV_LIBRARIES})
-
 add_executable(move_to_table src/move_to_table.cpp src/RobotClass.cpp)
-target_link_libraries(move_to_table ${catkin_LIBRARIES})
+target_link_libraries(move_to_table ${catkin_LIBRARIES} ${OpenCV_LIBRARIES})
 
 add_executable(automapping src/automapping.cpp src/AutomappingNode.cpp src/RobotClass.cpp)
 target_link_libraries(automapping ${catkin_LIBRARIES})
