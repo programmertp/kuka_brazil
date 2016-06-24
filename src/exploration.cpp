@@ -83,8 +83,8 @@ public:
 Explorer::Explorer()
 {
 	searching = false;
-	ros::ServiceClient client = n.serviceClient<nav_msgs::GetMap>("dynamic_map");
-	ros::ServiceServer service = n.advertiseService("get_goal_at_map", &Explorer::callback, this);
+	client = n.serviceClient<nav_msgs::GetMap>("dynamic_map");
+	service = n.advertiseService("get_goal_at_map", &Explorer::callback, this);
 }
 
 Explorer::~Explorer()

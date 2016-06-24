@@ -47,7 +47,7 @@ geometry_msgs::PoseStamped RobotClass::currentPose(std::string in_frame){
     tf::TransformListener listener;
     tf::StampedTransform transform;
 
-    ros::Time now = ros::Time::now();
+    ros::Time now = ros::Time(0);
     listener.waitForTransform(in_frame, "base_link", now, ros::Duration(5.0));
     listener.lookupTransform(in_frame, "base_link", now, transform);
 

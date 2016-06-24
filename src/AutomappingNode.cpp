@@ -118,9 +118,9 @@ void AutomappingNode::doYourWork(){
     ROS_INFO_STREAM("Saving information about robot's pose...");
     std::ofstream fout(pose_params_file_name.c_str());
     if(fout.is_open()){
-        fout << "initial_pose_x:" << curr_robot_pose.pose.position.x << std::endl;
-        fout << "initial_pose_y:" << curr_robot_pose.pose.position.y << std::endl;
-        fout << "initial_pose_a:" << tf::getYaw(curr_robot_pose.pose.orientation);
+        fout << "initial_pose_x: " << curr_robot_pose.pose.position.x << std::endl;
+        fout << "initial_pose_y: " << curr_robot_pose.pose.position.y << std::endl;
+        fout << "initial_pose_a: " << tf::getYaw(curr_robot_pose.pose.orientation);
         ROS_INFO_STREAM("Information about robot's pose was saved");
     }
     else

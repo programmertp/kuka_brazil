@@ -7,7 +7,7 @@
 
 	<node name="stage" pkg="stage_ros" type="stageros" args="$(find kuka_brazil)/map/debug.world" />
 
-	<!-- Third, amcl -->
+	<!-- Third, gmapping -->
 	<include file="$(find kuka_brazil)/launch/2dslam.launch" />
 
 	<!-- Fourth, move_base -->
@@ -23,5 +23,7 @@
                 <param name="map_name" value="$(find kuka_brazil)/map/auto_result"/>
                 <param name="pose_params_file_name" value="$(find kuka_brazil)/config/init_pose.yaml"/>
         </node>
+
+	<node name="exploration_server" pkg="kuka_brazil" type="exploration_server" />
 
 </launch>
