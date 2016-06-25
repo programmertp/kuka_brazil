@@ -31,11 +31,17 @@ double AutomappingNode::distanceBetweenPoses(const geometry_msgs::PoseStamped &p
 
 
 geometry_msgs::PoseStamped AutomappingNode::safeGoalInPlan(const nav_msgs::Path &plan){
+    geometry_msgs::PoseStamped goal;
     int last = plan.poses.size() - 1;
     for(int i = last-1; i > 0; i--)
-        if(distanceBetweenPoses(plan.poses[i], plan.poses[last]) >= safe_distance)
-            return plan.poses[i];
-    return plan.poses[0];
+        if(distanceBetweenPoses(plan.poses[i], plan.poses[last]) >= safe_distance){
+            goal = plan.poses[i];
+            goal.pose.orientation =
+            tf::createQuaternionMsgFromYaw(std::atan2(plan.poses[i+1].pose.position.y - goal.pose.position.y,
+                                                      plan.poses[i+1].pose.position.x - goal.pose.position.x));
+            return goal;
+        }
+    return goal;
 }
 
 
