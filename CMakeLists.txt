@@ -22,5 +22,5 @@ target_link_libraries(move_to_table ${catkin_LIBRARIES})
 add_executable(automapping src/automapping.cpp src/AutomappingNode.cpp src/RobotClass.cpp)
 target_link_libraries(automapping ${catkin_LIBRARIES})
 
-add_executable(exploration_server src/exploration.cpp)
+add_executable(exploration_server src/exploration.cpp src/ExplorationHelper.cpp)
 target_link_libraries(exploration_server ${catkin_LIBRARIES})
