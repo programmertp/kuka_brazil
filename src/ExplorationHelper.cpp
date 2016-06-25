@@ -65,7 +65,7 @@ bool Explorer::callback(kuka_brazil_msgs::GetGoal::Request &req,
 			for (int z = 0, size = req.excluded_goals.size(); z < size; z++)
 			{
 				if ((x == req.excluded_goals[z].x) &&
-					(y == req.excluded_goals[z].y)) break;
+					(y == req.excluded_goals[z].y)) continue;
 			}
 			res.goal.x = x;
 			res.goal.y = y;
@@ -84,7 +84,7 @@ bool Explorer::callback(kuka_brazil_msgs::GetGoal::Request &req,
 			for (int z = 0, size = req.excluded_goals.size(); z < size; z++)
 			{
 				if ((x == req.excluded_goals[z].x) &&
-					(y == req.excluded_goals[z].y)) break;
+					(y == req.excluded_goals[z].y)) continue;
 			}
 			res.goal.x = x;
 			res.goal.y = y;
@@ -103,7 +103,7 @@ bool Explorer::callback(kuka_brazil_msgs::GetGoal::Request &req,
 			for (int z = 0, size = req.excluded_goals.size(); z < size; z++)
 			{
 				if ((x == req.excluded_goals[z].x) &&
-					(y == req.excluded_goals[z].y)) break;
+					(y == req.excluded_goals[z].y)) continue;
 			}
 			res.goal.x = x;
 			res.goal.y = y;
@@ -122,7 +122,7 @@ bool Explorer::callback(kuka_brazil_msgs::GetGoal::Request &req,
 			for (int z = 0, size = req.excluded_goals.size(); z < size; z++)
 			{
 				if ((x == req.excluded_goals[z].x) &&
-					(y == req.excluded_goals[z].y)) break;
+					(y == req.excluded_goals[z].y)) continue;
 			}
 			res.goal.x = x;
 			res.goal.y = y;
