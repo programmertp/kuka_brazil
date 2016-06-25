@@ -13,7 +13,7 @@ include_directories(
     ${catkin_INCLUDE_DIRS}
 )
 
-add_executable(move_to_table src/move_to_table.cpp src/RobotClass.cpp)
+add_executable(move_to_table src/move_to_table.cpp src/MoveToTableNode.cpp src/RobotClass.cpp)
 target_link_libraries(move_to_table ${catkin_LIBRARIES} ${OpenCV_LIBRARIES})
 
 add_executable(automapping src/automapping.cpp src/AutomappingNode.cpp src/RobotClass.cpp)
