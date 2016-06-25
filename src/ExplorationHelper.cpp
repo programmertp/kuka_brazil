@@ -81,14 +81,18 @@ bool Explorer::callback(kuka_brazil_msgs::GetGoal::Request &req,
 		{
 			double x = x_from_j(exp_j, map.info);
 			double y = y_from_i(exp_i, map.info);
-			for (int z = 0, size = req.excluded_goals.size(); z < size; z++)
+			int z, size;
+			for (z = 0, size = req.excluded_goals.size(); z < size; z++)
 			{
 				if ((x == req.excluded_goals[z].x) &&
-					(y == req.excluded_goals[z].y)) continue;
+					(y == req.excluded_goals[z].y)) break;
 			}
-			res.goal.x = x;
-			res.goal.y = y;
-			return true;
+			if(z == size)
+			{
+				res.goal.x = x;
+				res.goal.y = y;
+				return true;
+			}
 		}
 	}
 
@@ -100,14 +104,18 @@ bool Explorer::callback(kuka_brazil_msgs::GetGoal::Request &req,
 		{
 			double x = x_from_j(exp_j, map.info);
 			double y = y_from_i(exp_i, map.info);
-			for (int z = 0, size = req.excluded_goals.size(); z < size; z++)
+			int z, size;
+			for (z = 0, size = req.excluded_goals.size(); z < size; z++)
 			{
 				if ((x == req.excluded_goals[z].x) &&
-					(y == req.excluded_goals[z].y)) continue;
+					(y == req.excluded_goals[z].y)) break;
 			}
-			res.goal.x = x;
-			res.goal.y = y;
-			return true;
+			if(z == size)
+			{
+				res.goal.x = x;
+				res.goal.y = y;
+				return true;
+			}
 		}
 	}
 
@@ -119,14 +127,18 @@ bool Explorer::callback(kuka_brazil_msgs::GetGoal::Request &req,
 		{
 			double x = x_from_j(exp_j, map.info);
 			double y = y_from_i(exp_i, map.info);
-			for (int z = 0, size = req.excluded_goals.size(); z < size; z++)
+			int z, size;
+			for (z = 0, size = req.excluded_goals.size(); z < size; z++)
 			{
 				if ((x == req.excluded_goals[z].x) &&
-					(y == req.excluded_goals[z].y)) continue;
+					(y == req.excluded_goals[z].y)) break;
 			}
-			res.goal.x = x;
-			res.goal.y = y;
-			return true;
+			if(z == size)
+			{
+				res.goal.x = x;
+				res.goal.y = y;
+				return true;
+			}
 		}
 	}
     }
